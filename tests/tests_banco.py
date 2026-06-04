@@ -4,11 +4,9 @@ from models.conta import Conta
 from models.movimento import Movimento
 
 def test_inicializar_banco_com_contas_pre_existentes():
-    # 1. Criamos uma conta isolada para passar ao construtor
     conta_existente = Conta("99", "Pre-existente", saldo=100, movimentos=[])
     dicionario_contas = {"99": conta_existente}
     
-    # 2. Inicializamos o Banco passando o dicionário (cobre o 'else' do __init__)
     banco = Banco(contas=dicionario_contas)
     assert banco.verifica_conta("99") is True
 
@@ -29,7 +27,6 @@ def test_procurar_conta_com_sucesso():
     banco = Banco()
     banco.criar_conta("123", "Carlos")
     
-    # Cobre o caminho "if" do procurar_conta
     conta_encontrada = banco.procurar_conta("123")
     assert conta_encontrada.get_titular() == "Carlos"
 
@@ -42,7 +39,6 @@ def test_remover_conta():
     banco = Banco()
     banco.criar_conta("1", "Mané")
     
-    # Cobre o caminho "if" do remover_conta
     assert banco.remover_conta("1") is True
     assert banco.verifica_conta("1") is False
 
@@ -56,7 +52,6 @@ def test_listar_contas():
     banco.criar_conta("1", "Mané")
     banco.criar_conta("2", "Ana")
 
-    # Cobre a função listar_contas por completo
     contas_retornadas = banco.listar_contas()
 
     assert "1" in contas_retornadas
