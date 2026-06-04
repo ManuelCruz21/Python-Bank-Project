@@ -1,4 +1,4 @@
-from Conta import Conta
+from models.conta import Conta
 
 class Banco:
 
@@ -21,8 +21,9 @@ class Banco:
         if self.verifica_conta(numero):
             del self._contas[numero]
             print("Conta removida.")
+            return True
         else:
-            print("Conta inexistente.")
+            raise ValueError ("Conta inexistente.")
 
     def procurar_conta(self, numero):
         if self.verifica_conta(numero):
@@ -33,4 +34,6 @@ class Banco:
     def listar_contas(self):
         for numero, conta in self._contas.items():
             print(f"{numero} - {conta.get_titular()} - Saldo: {conta.consultar_saldo()}")
+        
+        return self._contas
 
