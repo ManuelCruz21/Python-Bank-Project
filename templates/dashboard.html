@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PyBank - Dashboard Seguro</title>
+    <title>PyBank - Secure Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans min-h-screen">
@@ -11,11 +11,11 @@
     <nav class="{% if session.role == 'gerente' %}bg-purple-800{% else %}bg-blue-600{% endif %} text-white shadow-md px-6 py-4">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <h1 class="text-2xl font-bold tracking-wide">
-                🏦 PyBank {% if session.role == 'gerente' %}- Painel de Auditoria (Gerente){% else %}- Homebanking Pessoal{% endif %}
+                🏦 PyBank {% if session.role == 'gerente' %}- Audit Dashboard (Manager){% else %}- Digital Homebanking{% endif %}
             </h1>
             <div class="flex items-center gap-4">
-                <span class="text-sm font-medium">Olá, <strong>{{ session.titular_logado }}</strong> {% if conta is defined and conta %}(Conta #{{ conta.numero }}){% endif %}</span>
-                <a href="/logout" class="bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow">Sair 🚪</a>
+                <span class="text-sm font-medium">Welcome, <strong>{{ session.titular_logado }}</strong> {% if conta is defined and conta %}(Acc #{{ conta.numero }}){% endif %}</span>
+                <a href="/logout" class="bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow">Logout 🚪</a>
             </div>
         </div>
     </nav>
@@ -36,22 +36,22 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-3 bg-white p-6 rounded-2xl shadow-sm border border-purple-200 flex justify-between items-center">
                 <div>
-                    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Balanço Total de Ativos (Custódia)</h2>
+                    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Assets Under Custody</h2>
                     <p class="text-3xl font-black text-purple-800 font-mono mt-1">{{ "%.2f"|format(total_banco) }} €</p>
                 </div>
-                <span class="bg-purple-100 text-purple-800 text-xs font-bold px-3 py-1 rounded-full border border-purple-300">Modo Supervisor Ativo</span>
+                <span class="bg-purple-100 text-purple-800 text-xs font-bold px-3 py-1 rounded-full border border-purple-300">Supervisor Mode Active</span>
             </div>
 
             <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">📋 Contas Registadas no Sistema</h3>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">📋 Active Accounts in System</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse text-sm text-gray-700">
                         <thead>
                             <tr class="border-b border-gray-200 text-gray-400 text-xs uppercase tracking-wider font-semibold">
-                                <th class="pb-3">Nº Conta</th>
-                                <th class="pb-3">Titular</th>
-                                <th class="pb-3 text-right">Saldo Atual</th>
-                                <th class="pb-3 text-center">Ações</th>
+                                <th class="pb-3">Acc Number</th>
+                                <th class="pb-3">Account Holder</th>
+                                <th class="pb-3 text-right">Current Balance</th>
+                                <th class="pb-3 text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -61,9 +61,9 @@
                                 <td class="py-3 font-medium">{{ acc.titular }}</td>
                                 <td class="py-3 text-right font-semibold text-gray-900 font-mono">{{ "%.2f"|format(acc.saldo) }} €</td>
                                 <td class="py-3 text-center">
-                                    <form action="/admin/eliminar-conta/{{ acc.numero }}" method="POST" onsubmit="return confirm('REVOGAÇÃO EXCEPCIONAL: Tens a certeza que desejas encerrar administrativamente a conta de {{ acc.titular }}?');">
+                                    <form action="/admin/eliminar-conta/{{ acc.numero }}" method="POST" onsubmit="return confirm('CRITICAL REVOCATION: Are you sure you want to administratively terminate the account belonging to {{ acc.titular }}?');">
                                         <button type="submit" class="bg-red-100 hover:bg-red-600 text-red-600 hover:text-white px-3 py-1 rounded-lg text-xs font-medium transition shadow-sm border border-red-200">
-                                            🛑 Encerrar Conta
+                                            🛑 Terminate Account
                                         </button>
                                     </form>
                                 </td>
@@ -75,19 +75,19 @@
             </div>
 
             <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h3 class="text-md font-bold text-gray-800 mb-4">🔍 Monitor de Transações (SIEM Logs)</h3>
+                <h3 class="text-md font-bold text-gray-800 mb-4">🔍 Transaction Log Monitor (SIEM Logs)</h3>
                 <div class="space-y-3 h-[400px] overflow-y-auto pr-2 text-xs">
                     {% if not movimentos_admin %}
-                        <p class="text-gray-400 italic text-center py-10">Nenhum log registado.</p>
+                        <p class="text-gray-400 italic text-center py-10">No logs registered yet.</p>
                     {% else %}
                         {% for m in movimentos_admin %}
                         <div class="p-2.5 bg-gray-50 rounded-lg border border-gray-200 space-y-1">
                             <div class="flex justify-between text-gray-400 font-mono">
-                                <span>Conta #{{ m.conta_numero }}</span>
+                                <span>Acc #{{ m.conta_numero }}</span>
                                 <span>{{ m.data.strftime('%H:%M:%S') }}</span>
                             </div>
                             <p class="font-semibold text-gray-700">{{ m.tipo }}</p>
-                            <p class="text-gray-500 font-mono">Impacto: {{ "%.2f"|format(m.valor) }} €</p>
+                            <p class="text-gray-500 font-mono">Impact: {{ "%.2f"|format(m.valor) }} €</p>
                         </div>
                         {% endfor %}
                     {% endif %}
@@ -100,47 +100,47 @@
             
             <div class="lg:col-span-1 space-y-6">
                 <div class="bg-gradient-to-br from-slate-800 to-slate-900 text-white p-6 rounded-2xl shadow-xl border border-slate-700">
-                    <p class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Saldo Disponível</p>
+                    <p class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Available Balance</p>
                     <h3 class="text-4xl font-black mt-2 text-emerald-400 font-mono">{{ "%.2f"|format(conta.saldo) }} €</h3>
                     <div class="mt-4 pt-4 border-t border-slate-700 flex justify-between text-xs text-slate-400">
-                        <span>Titular: {{ conta.titular }}</span>
-                        <span>Conta Digital Ativa</span>
+                        <span>Holder: {{ conta.titular }}</span>
+                        <span>Active Digital Account</span>
                     </div>
                 </div>
 
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h2 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">💵 Caixa Automático (ATM)</h2>
+                    <h2 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">💵 Online ATM Terminal</h2>
                     <form action="/operacao" method="POST" class="space-y-3">
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 uppercase">Tipo de Operação</label>
+                            <label class="block text-xs font-medium text-gray-500 uppercase">Operation Type</label>
                             <select name="tipo" class="w-full mt-1 p-2 border border-gray-300 rounded-lg text-sm bg-white font-medium">
-                                <option value="Depósito">Depósito (+)</option>
-                                <option value="Levantamento">Levantamento (-)</option>
+                                <option value="Depósito">Deposit (+)</option>
+                                <option value="Levantamento">Withdrawal (-)</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 uppercase">Quantia (€)</label>
+                            <label class="block text-xs font-medium text-gray-500 uppercase">Amount (€)</label>
                             <input type="number" step="0.01" name="valor" required placeholder="0.00" class="w-full mt-1 p-2 border border-gray-300 rounded-lg text-sm">
                         </div>
                         <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 rounded-lg text-sm shadow transition">
-                            Confirmar Operação
+                            Process Transaction
                         </button>
                     </form>
                 </div>
 
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h2 class="text-md font-semibold text-gray-800 mb-3">🔄 Transferência de Fundos</h2>
+                    <h2 class="text-md font-semibold text-gray-800 mb-3">🔄 Wire Transfer</h2>
                     <form action="/transferir" method="POST" class="space-y-3">
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 uppercase">Conta do Destinatário</label>
-                            <input type="text" name="destino" required placeholder="Nº da conta de quem recebe" class="w-full mt-1 p-2 border border-gray-300 rounded-lg text-sm">
+                            <label class="block text-xs font-medium text-gray-500 uppercase">Recipient Account Number</label>
+                            <input type="text" name="destino" required placeholder="Who will receive the funds" class="w-full mt-1 p-2 border border-gray-300 rounded-lg text-sm">
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 uppercase">Valor a Transferir (€)</label>
+                            <label class="block text-xs font-medium text-gray-500 uppercase">Amount to Transfer (€)</label>
                             <input type="number" step="0.01" name="valor" required placeholder="0.00" class="w-full mt-1 p-2 border border-gray-300 rounded-lg text-sm">
                         </div>
                         <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg text-sm shadow transition">
-                            Executar Transferência
+                            Execute Transfer
                         </button>
                     </form>
                 </div>
@@ -149,22 +149,22 @@
             <div class="lg:col-span-2">
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 min-h-[530px] flex flex-col justify-between">
                     <div>
-                        <h2 class="text-lg font-semibold text-gray-800 mb-4">📑 Extrato de Movimentos Pessoais</h2>
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">📑 Account Statement</h2>
                         
                         {% if not movimentos %}
                             <div class="text-center py-20 text-gray-400">
                                 <p class="text-4xl mb-2">📊</p>
-                                <p class="text-sm">Nenhum movimento registado nesta conta até ao momento.</p>
+                                <p class="text-sm">No transaction records found for this account.</p>
                             </div>
                         {% else %}
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left border-collapse text-xs text-gray-600">
                                     <thead>
                                         <tr class="border-b border-gray-200 text-gray-400 text-xs uppercase tracking-wider font-semibold">
-                                            <th class="pb-3">Data / Hora</th>
-                                            <th class="pb-3">Operação</th>
-                                            <th class="pb-3">Descrição</th>
-                                            <th class="pb-3 text-right">Impacto no Saldo</th>
+                                            <th class="pb-3">Date / Time</th>
+                                            <th class="pb-3">Operation</th>
+                                            <th class="pb-3">Description</th>
+                                            <th class="pb-3 text-right">Balance Impact</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-100">
@@ -185,9 +185,9 @@
                     </div>
 
                     <div class="pt-6 border-t border-gray-100 flex justify-end">
-                        <form action="/eliminar-minha-conta" method="POST" onsubmit="return confirm('ALERTA CRÍTICO: Tens a certeza que queres apagar permanentemente a tua própria conta? Perderás todos os teus fundos e histórico.');">
+                        <form action="/eliminar-minha-conta" method="POST" onsubmit="return confirm('CRITICAL WARNING: Are you sure you want to permanently delete your bank account? This action cannot be undone and you will lose all history and funds.');">
                             <button type="submit" class="text-red-500 hover:text-white border border-red-200 hover:bg-red-600 font-medium px-4 py-2 rounded-lg text-xs transition shadow-sm">
-                                ⚠ Encerrar a Minha Conta Bancária
+                                ⚠ Terminate My Bank Account
                             </button>
                         </form>
                     </div>
