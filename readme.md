@@ -2,7 +2,6 @@
 
 ## 📄 1. README.md (System Documentation)
 
-```markdown
 # 🏦 PyBank - Secure Digital Homebanking Suite
 
 PyBank is a lightweight, cybersecure full-stack digital banking and auditing application built using Python (Flask), SQLAlchemy, and Tailwind CSS, with database persistence on Supabase (PostgreSQL). 
@@ -70,7 +69,7 @@ pip install -r requirements.txt
 
 
 ### 3. Configure Environment Variables
-To run the project locally, you need to set up your local environment variables. Create a file named `.env` in the root folder of your project (this file is ignored by Git for security reasons) and add your database configuration. We used Supabase for this:
+To run the project locally, you need to set up your local environment variables. Create a file named ".env" in the root folder of your project (this file is ignored by Git for security reasons) and add your database configuration. We used Supabase for this:
 
 
 SECRET_KEY=your_local_secure_session_key
