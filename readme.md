@@ -1,11 +1,11 @@
-# 🏦 ApexTrust - Secure Digital Homebanking Suite
+# 🏦 PyBank - Secure Digital Homebanking Suite
 
 ## 📄 1. README.md (System Documentation)
 
 ```markdown
-# 🏦 ApexTrust - Secure Digital Homebanking Suite
+# 🏦 PyBank - Secure Digital Homebanking Suite
 
-ApexTrust is a lightweight, cybersecure full-stack digital banking and auditing application built using Python (Flask), SQLAlchemy, and Tailwind CSS, with database persistence on Supabase (PostgreSQL). 
+PyBank is a lightweight, cybersecure full-stack digital banking and auditing application built using Python (Flask), SQLAlchemy, and Tailwind CSS, with database persistence on Supabase (PostgreSQL). 
 
 The platform implements strict role-based access control (RBAC), dividing functionalities between regular **Clients** (who can manage their personal accounts and transfer funds) and **Managers/Auditors** (who possess supervisor privileges to oversee the system's global health and audit transactions).
 
@@ -51,9 +51,48 @@ The platform implements strict role-based access control (RBAC), dividing functi
 Follow these steps to spin up the secure bank suite environment on your local server machine:
 
 ### 1. Clone the Repository
-```bash
 git clone https://github.com/ManuelCruz21/Python-Bank-Project.git
-```
 
 
+### 2. Set Up a Virtual Environment & Install Dependencies
 
+# Create the virtual environment
+python -m venv .venv
+
+# Activate the environment (Windows)
+.venv\Scripts\activate
+
+# Activate the environment (Linux/Mac)
+source .venv/bin/activate
+
+# Install required dependencies
+pip install -r requirements.txt
+
+
+### 3. Configure Environment Variables
+To run the project locally, you need to set up your local environment variables. Create a file named `.env` in the root folder of your project (this file is ignored by Git for security reasons) and add your database configuration. We used Supabase for this:
+
+
+SECRET_KEY=your_local_secure_session_key
+# Local development string (or use the cloud production string below)
+DATABASE_URL=postgresql://postgres.wpnszvkfopsfrpxchqnz:[YOUR_SUPABASE_PASSWORD]@[aws-0-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=require&prepare_threshold=0](https://aws-0-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=require&prepare_threshold=0)
+
+
+### 4. Run the Application Locally
+Once the dependencies are installed and the .env file is configured, launch the Flask local development server by executing:
+
+python app.py
+
+After running the command, open your preferred web browser and navigate to: http://127.0.0.1:5000
+
+
+### 5. Cloud Production Deployment (Render)
+The live production environment is completely configured and hosted on Render linked to Supabase. For the online application, the environment variables were configured directly inside the Render Dashboard -> Environment Settings panel to keep production credentials safe and separate from the source code:
+
+PYTHON_VERSION: Set to 3.11.8 to ensure absolute runtime and package compatibility.
+
+SECRET_KEY: A high-entropy production key used to encrypt active Flask client sessions.
+
+DATABASE_URL: Hosted secure connection string pointing to the live Supabase PostgreSQL instance using the Transaction Pooler (port 6543) with sslmode=require.
+
+The online deployed version is the following url: https://python-bank-project-9mqy.onrender.com/
