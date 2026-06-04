@@ -32,5 +32,5 @@ class Banco:
 
     def listar_contas(self):
         for numero, conta in self._contas.items():
-            print(f"{numero} - {conta._titular} - Saldo: {conta._saldo}")
+            print(f"{numero} - {conta.get_titular()} - Saldo: {conta.consultar_saldo()}")
 

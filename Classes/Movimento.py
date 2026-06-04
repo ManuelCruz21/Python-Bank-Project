@@ -1,13 +1,17 @@
+from datetime import datetime
+
 class Movimento:
 
-    def __init__(self, tipo, valor, data, descricao,conta_destino):
+    def __init__(self, tipo, valor, descricao="", conta_destino=None):
         self._tipo = tipo
         self._valor = valor
-        self._data = data
+        self._data = datetime.now()
         self._descricao = descricao
         self._conta_destino = conta_destino
 
     def __str__(self):
-        return f"Tipo: {self._tipo}, Valor: {self._valor}, Data: {self._data}, Descrição: {self._descricao}, Conta Destino: {self._conta_destino}"
-    
-
+        destino = f" -> {self._conta_destino}" if self._conta_destino else ""
+        return (
+            f"{self._data} | {self._tipo} | {self._valor}"
+            f"{destino} | {self._descricao}"
+        )
