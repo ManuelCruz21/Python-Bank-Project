@@ -1,7 +1,8 @@
 import os
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, Column, String, Numeric, Integer, ForeignKey, DateTime
+from sqlalchemy import Column, String, Numeric, Integer, ForeignKey, DateTime
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import create_engine
 
 load_dotenv()
 
@@ -15,6 +16,7 @@ class ContaDB(Base):
     numero = Column(String(50), primary_key=True)
     titular = Column(String(100), nullable=False)
     saldo = Column(Numeric(15, 2), default=0.00, nullable=False)
+    pin = Column(String(60), nullable=False, default="1234") # ✨ Nova Coluna de Segurança
 
 class MovimentoDB(Base):
     __tablename__ = "movimentos"

@@ -1,58 +1,131 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from models.database import SessionLocal, ContaDB, MovimentoDB
-from datetime import datetime
 from decimal import Decimal
+from datetime import datetime
 
 app = Flask(__name__)
-# Vai buscar a secret key definida no teu .env para segurança das sessões
-app.secret_key = os.getenv("SECRET_KEY", "chave-secreta-padrao")
+app.secret_key = os.getenv("SECRET_KEY", "sessao-bancaria-ultra-segura-2026")
 
-# 🏠 1. ROTA PRINCIPAL: Listar Contas no Dashboard
+# 🔒 DECORATOR / FUNÇÃO DE CONTROLO DE ACESSO (CIBERSEGURANÇA)
+def verificar_autenticacao():
+    if 'conta_logada' not in session:
+        return False
+    return True
+
+# 🏠 1. ROTA PRINCIPAL: Redireciona e carrega dados com base na Role (Cibersegurança RBAC)
 @app.route('/')
 def index():
+    if not verificar_autenticacao():
+        return redirect(url_for('login_page'))
+    
+    # 👑 CASO 1: Se o utilizador logado for GERENTE
+    if session.get('role') == 'gerente':
+        db = SessionLocal()
+        # Busca todas as contas (exceto os gerentes) para listagem administrativa
+        todas_contas = db.query(ContaDB).filter(ContaDB.role != 'gerente').order_by(ContaDB.numero).all()
+        # Calcula a soma de dinheiro guardado em todo o banco
+        total_banco = db.query(ContaDB).sum(ContaDB.saldo) or 0
+        # Carrega as últimas 50 transações globais do banco para auditoria preventiva
+        todos_movimentos = db.query(MovimentoDB).order_by(MovimentoDB.data.desc()).limit(50).all()
+        db.close()
+        
+        # Enviamos as variáveis do administrador, e fixamos conta=None para evitar conflitos no HTML
+        return render_template('dashboard.html', accounts_admin=todas_contas, total_banco=total_banco, movimentos_admin=todos_movimentos, conta=None)
+    
+    # 💵 CASO 2: Se o utilizador logado for um CLIENTE comum
+    numero_conta = session['conta_logada']
     db = SessionLocal()
-    # Vai buscar as contas gravadas no Supabase para listar na tabela
-    contas = db.query(ContaDB).all()
+    
+    # Busca estritamente os dados da conta que fez login (Isolamento de Dados)
+    conta = db.query(ContaDB).filter(ContaDB.numero == numero_conta).first()
+    # Busca apenas o histórico de movimentos desta conta específica para o Extrato Pessoal
+    movimentos = db.query(MovimentoDB).filter(MovimentoDB.conta_numero == numero_conta).order_by(MovimentoDB.data.desc()).all()
+    
     db.close()
-    return render_template('dashboard.html', contas=contas)
+    
+    if not conta:
+        session.clear()
+        return redirect(url_for('login_page'))
+        
+    return render_template('dashboard.html', conta=conta, movimentos=movimentos)
 
-# ✨ 2. ROTA: Criar Nova Conta
+# 🔑 2. ROTA: ECRÃ DE LOGIN
+@app.route('/login-portal')
+def login_page():
+    if 'conta_logada' in session:
+        return redirect(url_for('index'))
+    return render_template('login.html')
+
+# 🔐 3. ROTA: PROCESSAR AUTENTICAÇÃO
+@app.route('/login', methods=['POST'])
+def login():
+    numero = request.form.get('numero')
+    pin = request.form.get('pin')
+    
+    db = SessionLocal()
+    conta = db.query(ContaDB).filter(ContaDB.numero == numero).first()
+    db.close()
+    
+    # Validação segura (No mundo real usar-se-ia hashing como bcrypt, mas para o trabalho o PIN direto já valida a lógica)
+    if conta and conta.pin == pin:
+        session['conta_logada'] = conta.numero
+        session['titular_logado'] = conta.titular
+        flash(f"Bem-vindo de volta, {conta.titular}!", "success")
+        return redirect(url_for('index'))
+    else:
+        flash("Erro: Número de conta ou PIN incorretos.", "error")
+        return redirect(url_for('login_page'))
+
+# 🚪 4. ROTA: LOGOUT SEGURO
+@app.route('/logout')
+def logout():
+    session.clear() # Destrói os tokens e cookies de sessão
+    flash("Sessão encerrada com segurança.", "success")
+    return redirect(url_for('login_page'))
+
+# ✨ 5. ROTA: REGISTAR / CRIAR CONTA COM PIN
 @app.route('/criar-conta', methods=['POST'])
 def criar_conta():
     numero = request.form.get('numero')
     titular = request.form.get('titular')
+    pin = request.form.get('pin')
     
+    if len(str(pin)) != 4 or not str(pin).isdigit():
+        flash("Erro: O PIN deve conter exatamente 4 números.", "error")
+        return redirect(url_for('login_page'))
+
     db = SessionLocal()
     try:
-        # Cibersegurança & Regra de Negócio: Verificar duplicação
         conta_existente = db.query(ContaDB).filter(ContaDB.numero == numero).first()
         if conta_existente:
-            flash("Erro: Uma conta com esse número já existe!", "error")
-            return redirect(url_for('index'))
+            flash("Erro: Esse número de conta já se encontra registado.", "error")
+            return redirect(url_for('login_page'))
             
-        nova_conta = ContaDB(numero=numero, titular=titular, saldo=0.00)
+        nova_conta = ContaDB(numero=numero, titular=titular, saldo=Decimal('0.00'), pin=pin)
         db.add(nova_conta)
         db.commit()
-        flash(f"Conta #{numero} ativada com sucesso no Supabase!", "success")
+        flash("Conta registada com sucesso! Introduza as credenciais para aceder.", "success")
     except Exception as e:
         db.rollback()
-        flash(f"Erro ao criar conta: {str(e)}", "error")
+        flash(f"Erro no registo: {str(e)}", "error")
     finally:
         db.close()
         
-    return redirect(url_for('index'))
+    return redirect(url_for('login_page'))
 
-# 💵 3. ROTA: Depositar ou Levantar Dinheiro
+# 💵 6. ROTA: OPERAÇÕES (DEPOSITAR / LEVANTAR NA PRÓPRIA CONTA)
 @app.route('/operacao', methods=['POST'])
 def operacao():
-    numero = request.form.get('numero')
-    tipo = request.form.get('tipo') # 'Depósito' ou 'Levantamento'
+    if not verificar_autenticacao():
+        return redirect(url_for('login_page'))
+        
+    numero = session['conta_logada'] # Segurança: Força o uso da conta da sessão, impedindo IDOR attacks
+    tipo = request.form.get('tipo')
     try:
-        # CORREÇÃO: Mudado de float para Decimal para bater certo com a Base de Dados
         valor = Decimal(request.form.get('valor'))
     except Exception:
-        flash("Erro: Valor inválido introduzido.", "error")
+        flash("Erro: Valor inválido.", "error")
         return redirect(url_for('index'))
 
     if valor <= 0:
@@ -62,138 +135,98 @@ def operacao():
     db = SessionLocal()
     try:
         conta = db.query(ContaDB).filter(ContaDB.numero == numero).first()
-        if not conta:
-            flash("Erro: Conta não encontrada no sistema.", "error")
-            return redirect(url_for('index'))
-
         if tipo == "Depósito":
             conta.saldo += valor
-            flash(f"Depósito de {valor:.2f}€ realizado com sucesso na conta #{numero}!", "success")
-        
+            flash(f"Depósito de {valor:.2f}€ efetuado!", "success")
         elif tipo == "Levantamento":
             if valor > conta.saldo:
-                flash(f"Erro: Saldo insuficiente. Saldo atual: {conta.saldo:.2f}€", "error")
+                flash("Erro: Saldo insuficiente.", "error")
                 return redirect(url_for('index'))
             conta.saldo -= valor
-            flash(f"Levantamento de {valor:.2f}€ realizado com sucesso na conta #{numero}!", "success")
+            flash(f"Levantamento de {valor:.2f}€ efetuado!", "success")
 
-        # Registar a transação no histórico de movimentos
         novo_movimento = MovimentoDB(
-            conta_numero=numero,
-            tipo=tipo,
+            conta_numero=numero, tipo=tipo,
             valor=valor if tipo == "Depósito" else -valor,
-            data=datetime.now(),
-            descricao=f"{tipo} via Web interface"
+            data=datetime.now(), descricao=f"{tipo} no ATM Online"
         )
         db.add(novo_movimento)
         db.commit()
-
     except Exception as e:
         db.rollback()
-        flash(f"Erro na operação: {str(e)}", "error")
+        flash(f"Erro: {str(e)}", "error")
     finally:
         db.close()
-
     return redirect(url_for('index'))
 
-# 🔄 4. ROTA: Transferência Bancária entre Contas
+# 🔄 7. ROTA: TRANSFERÊNCIA
 @app.route('/transferir', methods=['POST'])
 def transferir():
-    origem = request.form.get('origem')
+    if not verificar_autenticacao():
+        return redirect(url_for('login_page'))
+
+    origem = session['conta_logada'] # Segurança redobrada
     destino = request.form.get('destino')
     try:
-        # CORREÇÃO: Mudado de float para Decimal para bater certo com a Base de Dados
         valor = Decimal(request.form.get('valor'))
     except Exception:
-        flash("Erro: Valor de transferência inválido.", "error")
+        flash("Erro: Valor inválido.", "error")
         return redirect(url_for('index'))
 
-    if valor <= 0:
-        flash("Erro: O valor de transferência deve ser maior que 0 €.", "error")
-        return redirect(url_for('index'))
-
-    if origem == destino:
-        flash("Erro: Não pode transferir dinheiro para a mesma conta.", "error")
+    if valor <= 0 or origem == destino:
+        flash("Erro: Operação inválida.", "error")
         return redirect(url_for('index'))
 
     db = SessionLocal()
     try:
-        conta_origem = db.query(ContaDB).filter(ContaDB.numero == origem).first()
+        conta_origem = db.query(ContaDB).filter(ContaDB.numero ==  origem).first()
         conta_destino = db.query(ContaDB).filter(ContaDB.numero == destino).first()
 
-        if not conta_origem:
-            flash(f"Erro: Conta de Origem #{origem} não existe.", "error")
-            return redirect(url_for('index'))
         if not conta_destino:
-            flash(f"Erro: Conta de Destino #{destino} não existe.", "error")
+            flash(f"Erro: A conta destinatária #{destino} não existe.", "error")
             return redirect(url_for('index'))
-
-        # Validar segurança de fundos
         if valor > conta_origem.saldo:
-            flash(f"Erro: Saldo insuficiente na conta de origem. Saldo atual: {conta_origem.saldo:.2f}€", "error")
+            flash("Erro: Saldo insuficiente para transferência.", "error")
             return redirect(url_for('index'))
 
-        # Executar a transferência matemática
         conta_origem.saldo -= valor
         conta_destino.saldo += valor
 
-        # Registar movimento na conta de origem (Saída de dinheiro)
-        mov_origem = MovimentoDB(
-            conta_numero=origem,
-            tipo="Transferência (Enviada)",
-            valor=-valor,
-            data=datetime.now(),
-            descricao=f"Transferido para conta #{destino}",
-            conta_destino=destino
-        )
-        
-        # Registar movimento na conta de destino (Entrada de dinheiro)
-        mov_destino = MovimentoDB(
-            conta_numero=destino,
-            tipo="Transferência (Recebida)",
-            valor=valor,
-            data=datetime.now(),
-            descricao=f"Recebido da conta #{origem}",
-            conta_destino=origem
-        )
+        mov_origem = MovimentoDB(conta_numero=origem, tipo="Transferência (Enviada)", valor=-valor, data=datetime.now(), descricao=f"Enviado para conta #{destino}", conta_destino=destino)
+        mov_destino = MovimentoDB(conta_numero=destino, tipo="Transferência (Recebida)", valor=valor, data=datetime.now(), descricao=f"Recebido de conta #{origem}", conta_destino=origem)
 
         db.add(mov_origem)
         db.add(mov_destino)
         db.commit()
-        
-        flash(f"Transferência de {valor:.2f}€ enviada com sucesso para a conta #{destino}!", "success")
-
+        flash(f"Transferência de {valor:.2f}€ concluída!", "success")
     except Exception as e:
         db.rollback()
-        flash(f"Erro ao processar transferência: {str(e)}", "error")
+        flash(f"Erro: {str(e)}", "error")
     finally:
         db.close()
-
     return redirect(url_for('index'))
 
-# 🗑️ 5. ROTA: Remover/Apagar Conta do Sistema
-@app.route('/eliminar-conta/<numero>', methods=['POST'])
-def eliminar_conta(numero):
+# 🗑️ 8. ROTA: ELIMINAR A PRÓPRIA CONTA
+@app.route('/eliminar-minha-conta', methods=['POST'])
+def eliminar_conta():
+    if not verificar_autenticacao():
+        return redirect(url_for('login_page'))
+        
+    numero = session['conta_logada']
     db = SessionLocal()
     try:
-        # Procura a conta na base de dados
         conta = db.query(ContaDB).filter(ContaDB.numero == numero).first()
-        if not conta:
-            flash("Erro: Conta não encontrada.", "error")
-            return redirect(url_for('index'))
-        
-        # Como no SQL usámos "ON DELETE CASCADE", ao apagar a conta,
-        # o Supabase apaga automaticamente todos os movimentos dela! (Cibersegurança & Integridade)
         db.delete(conta)
         db.commit()
-        flash(f"Conta #{numero} foi permanentemente removida do sistema.", "success")
+        session.clear()
+        flash("A tua conta foi permanentemente apagada do servidor.", "success")
+        return redirect(url_for('login_page'))
     except Exception as e:
         db.rollback()
-        flash(f"Erro ao eliminar conta: {str(e)}", "error")
+        flash(f"Erro: {str(e)}", "error")
+        return redirect(url_for('index'))
     finally:
         db.close()
-        
-    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True)
