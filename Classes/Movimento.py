@@ -10,5 +10,4 @@ class Movimento:
     def __str__(self):
         return f"Tipo: {self._tipo}, Valor: {self._valor}, Data: {self._data}, Descrição: {self._descricao}, Conta Destino: {self._conta_destino}"
     
-    
 

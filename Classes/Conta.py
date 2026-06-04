@@ -1,39 +1,44 @@
 class Conta:
 
-    def __init__(self,numero,titular,saldo,movimentos):
-        self._numero = numero
-        self._titular = titular
-        self._saldo = saldo
-        self._movimentos = movimentos
+    def __init__(self, numero, titular, saldo=0, movimentos=None):
+        self.__numero = numero
+        self.__titular = titular
+        self.__saldo = saldo
+        self.__movimentos = movimentos if movimentos is not None else []
 
-    # Adiciona saldo à conta e regista um movimento.  
-    def depositar(self,valor):
-        self._saldo += valor
-        self._movimentos.append(valor)
+    def depositar(self, valor):
+        if valor <= 0:
+            raise ValueError("Valor inválido.")
 
-    # Retira saldo da conta (se houver saldo suficiente) e regista um movimento.
-    def levantar(self,valor):
-        if valor > self._saldo:
-            print("Saldo insuficiente.")
-        else:
-            self._saldo -= valor
-            self._movimentos.append(-valor)
+        self.__saldo += valor
+        self.__movimentos.append(valor)
 
-    # Transfere valor para outra conta e regista um movimento.
-    def transferir(self,valor,conta_destino):
-        if valor > self._saldo:
-            print("Saldo insuficiente.")
-        else:
-            self._saldo -= valor
-            conta_destino.depositar(valor)
-            self._movimentos.append(-valor)
+    def levantar(self, valor):
+        if valor <= 0:
+            raise ValueError("Valor inválido.")
 
-    # Retorna o saldo atual da conta.
+        if valor > self.__saldo:
+            raise ValueError("Saldo insuficiente.")
+
+        self.__saldo -= valor
+        self.__movimentos.append(-valor)
+
+    def transferir(self, valor, conta_destino):
+        if valor <= 0:
+            raise ValueError("Valor inválido.")
+
+        if valor > self.__saldo:
+            raise ValueError("Saldo insuficiente.")
+
+        self.__saldo -= valor
+        conta_destino.depositar(valor)
+        self.__movimentos.append(-valor)
+
     def consultar_saldo(self):
-        return self._saldo
-    
-    # Retorna a lista de movimentos da conta.
+        return self.__saldo
+
     def consultar_movimentos(self):
-        return self._movimentos
+        return self.__movimentos
     
-    
+    def get_titular(self):
+        return self.__titular
