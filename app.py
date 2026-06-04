@@ -105,7 +105,6 @@ def criar_conta():
         db.close()
     return redirect(url_for('login_page'))
 
-# Financial Operations 
 @app.route('/operacao', methods=['POST'])
 def operacao():
     if not verificar_autenticacao() or session.get('role') == 'gerente':
@@ -125,28 +124,50 @@ def operacao():
 
     db = SessionLocal()
     try:
-        conta = db.query(ContaDB).filter(ContaDB.numero == numero).first()
-        if tipo == "Deposit":
+        conta = db.query(ContaDB).filter(ContaDB.numero == numero).with_for_update().first()
+        
+        if not conta:
+            flash("Error: Account not found.", "error")
+            return redirect(url_for('index'))
+
+        operacao_valida = False
+        valor_historico = Decimal('0.00')
+
+        if tipo in ["Depósito", "Deposit"]:
             conta.saldo += valor
+            valor_historico = valor
+            operacao_valida = True
             flash(f"Deposit of {valor:.2f}€ successfully processed!", "success")
-        elif tipo == "Withdrawal":
+            
+        elif tipo in ["Levantamento", "Withdrawal"]:
             if valor > conta.saldo:
                 flash("Error: Insufficient balance.", "error")
                 return redirect(url_for('index'))
+            
             conta.saldo -= valor
+            valor_historico = -valor
+            operacao_valida = True
             flash(f"Withdrawal of {valor:.2f}€ successfully processed!", "success")
 
-        novo_movimento = MovimentoDB(
-            conta_numero=numero, tipo=tipo, valor=valor if tipo == "Deposit" else -valor,
-            data=datetime.now(), descricao=f"{tipo} via Online ATM"
-        )
-        db.add(novo_movimento)
-        db.commit()
+        if operacao_valida:
+            novo_movimento = MovimentoDB(
+                conta_numero=numero, 
+                tipo=tipo, 
+                valor=valor_historico, 
+                data=datetime.now(), 
+                descricao=f"{tipo} via Online ATM"
+            )
+            db.add(novo_movimento)
+            db.commit()
+        else:
+            flash("Error: Invalid operation type.", "error")
+
     except Exception as e:
         db.rollback()
         flash(f"Transaction Error: {str(e)}", "error")
     finally:
-        db.close()
+        db.close() # O Flask garante SEMPRE que o banco fecha aqui antes do redirect
+        
     return redirect(url_for('index'))
 
 # Transfers
@@ -169,14 +190,17 @@ def transferir():
 
     db = SessionLocal()
     try:
-        conta_origem = db.query(ContaDB).filter(ContaDB.numero == origem).first()
-        conta_destino = db.query(ContaDB).filter(ContaDB.numero == destino).first()
+        conta_origem = db.query(ContaDB).filter(ContaDB.numero == origem).with_for_update().first()
+        conta_destino = db.query(ContaDB).filter(ContaDB.numero == destino).with_for_update().first()
 
         if not conta_destino:
             flash(f"Error: Destination account #{destino} does not exist.", "error")
+            db.close() 
             return redirect(url_for('index'))
+            
         if valor > conta_origem.saldo:
             flash("Error: Insufficient funds for this transfer.", "error")
+            db.close()
             return redirect(url_for('index'))
 
         conta_origem.saldo -= valor
@@ -189,11 +213,13 @@ def transferir():
         db.add(mov_destino)
         db.commit()
         flash(f"Transfer of {valor:.2f}€ successfully completed!", "success")
+        
     except Exception as e:
         db.rollback()
         flash(f"Transfer Error: {str(e)}", "error")
     finally:
         db.close()
+        
     return redirect(url_for('index'))
 
 # Admin Actions: manager revokes account
