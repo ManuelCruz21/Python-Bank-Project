@@ -16,7 +16,8 @@ class ContaDB(Base):
     numero = Column(String(50), primary_key=True)
     titular = Column(String(100), nullable=False)
     saldo = Column(Numeric(15, 2), default=0.00, nullable=False)
-    pin = Column(String(60), nullable=False, default="1234") # ✨ Nova Coluna de Segurança
+    pin = Column(String(60), nullable=False, default="1234")
+    role = Column(String, default='cliente')
 
 class MovimentoDB(Base):
     __tablename__ = "movimentos"
