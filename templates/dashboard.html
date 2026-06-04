@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyBank - Sistema Bancário</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen">
+
+    <nav class="bg-blue-600 text-white shadow-md px-6 py-4">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold tracking-wide">🏦 PyBank Online</h1>
+            <span class="text-sm bg-blue-700 px-3 py-1 rounded-full border border-blue-500">Supabase Secured (RLS)</span>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div class="md:col-span-3">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="p-4 rounded-lg mb-4 text-white {% if category == 'error' %}bg-red-500{% else %}bg-green-500{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <div class="md:col-span-1 space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">✨ Criar Nova Conta</h2>
+                <form action="/criar-conta" method="POST" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 uppercase">Número da Conta</label>
+                        <input type="text" name="numero" required placeholder="Ex: 12345" class="w-full mt-1 p-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 uppercase">Nome do Titular</label>
+                        <input type="text" name="titular" required placeholder="Ex: Tomás Quintas" class="w-full mt-1 p-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-sm shadow">
+                        Ativar Conta
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="md:col-span-2">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 min-h-[350px]">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">📋 Contas Registadas na Nuvem</h2>
+                
+                {% if not contas %}
+                    <div class="text-center py-12 text-gray-400">
+                        <p class="text-3xl mb-2">📭</p>
+                        <p class="text-sm">Nenhuma conta encontrada no Supabase. Crie uma ao lado!</p>
+                    </div>
+                {% else %}
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-200 text-gray-400 text-xs uppercase tracking-wider font-semibold">
+                                    <th class="pb-3">Nº Conta</th>
+                                    <th class="pb-3">Titular</th>
+                                    <th class="pb-3 text-right">Saldo Atual</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
+                                {% for conta in contas %}
+                                    <tr class="hover:bg-gray-50 transition">
+                                        <td class="py-3 font-mono font-medium text-blue-600">#{{ conta.numero }}</td>
+                                        <td class="py-3 font-medium">{{ conta.titular }}</td>
+                                        <td class="py-3 text-right font-semibold text-green-600">{{ "%.2f"|format(conta.saldo) }} €</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="text-center py-8 text-xs text-gray-400">
+        PyBank Web Ecosystem &copy; 2026 - GitHub Python Bank Project
+    </footer>
+
+</body>
+</html>
