@@ -106,29 +106,36 @@
                         </div>
                     {% else %}
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="border-b border-gray-200 text-gray-400 text-xs uppercase tracking-wider font-semibold">
-                                        <th class="pb-3">Nº Conta</th>
-                                        <th class="pb-3">Titular</th>
-                                        <th class="pb-3 text-right">Saldo Atual</th>
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-200 text-gray-400 text-xs uppercase tracking-wider font-semibold">
+                                    <th class="pb-3">Nº Conta</th>
+                                    <th class="pb-3">Titular</th>
+                                    <th class="pb-3 text-right">Saldo Atual</th>
+                                    <th class="pb-3 text-center">Ações</th> </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
+                                {% for conta in contas %}
+                                    <tr class="hover:bg-gray-50 transition">
+                                        <td class="py-3 font-mono font-medium text-blue-600">#{{ conta.numero }}</td>
+                                        <td class="py-3 font-medium">{{ conta.titular }}</td>
+                                        <td class="py-3 text-right font-semibold text-green-600">{{ "%.2f"|format(conta.saldo) }} €</td>
+                                        <td class="py-3 text-center">
+                                            <form action="/eliminar-conta/{{ conta.numero }}" method="POST" onsubmit="return confirm('Tens a certeza que desejas apagar permanentemente a conta #{{ conta.numero }}? Esta ação não pode ser desfeita.');">
+                                                <button type="submit" class="bg-red-100 hover:bg-red-600 text-red-600 hover:text-white px-3 py-1 rounded-lg text-xs font-medium transition shadow-sm border border-red-200">
+                                                    🗑️ Apagar
+                                                </button>
+                                            </form>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
-                                    {% for conta in contas %}
-                                        <tr class="hover:bg-gray-50 transition">
-                                            <td class="py-3 font-mono font-medium text-blue-600">#{{ conta.numero }}</td>
-                                            <td class="py-3 font-medium">{{ conta.titular }}</td>
-                                            <td class="py-3 text-right font-semibold text-green-600">{{ "%.2f"|format(conta.saldo) }} €</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                         </div>
                     {% endif %}
                 </div>
             </div>
-
+            
         </div>
 
     </main>

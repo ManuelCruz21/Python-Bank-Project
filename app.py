@@ -2,6 +2,7 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from models.database import SessionLocal, ContaDB, MovimentoDB
 from datetime import datetime
+from decimal import Decimal
 
 app = Flask(__name__)
 # Vai buscar a secret key definida no teu .env para segurança das sessões
@@ -48,8 +49,9 @@ def operacao():
     numero = request.form.get('numero')
     tipo = request.form.get('tipo') # 'Depósito' ou 'Levantamento'
     try:
-        valor = float(request.form.get('valor'))
-    except ValueError:
+        # CORREÇÃO: Mudado de float para Decimal para bater certo com a Base de Dados
+        valor = Decimal(request.form.get('valor'))
+    except Exception:
         flash("Erro: Valor inválido introduzido.", "error")
         return redirect(url_for('index'))
 
@@ -100,8 +102,9 @@ def transferir():
     origem = request.form.get('origem')
     destino = request.form.get('destino')
     try:
-        valor = float(request.form.get('valor'))
-    except ValueError:
+        # CORREÇÃO: Mudado de float para Decimal para bater certo com a Base de Dados
+        valor = Decimal(request.form.get('valor'))
+    except Exception:
         flash("Erro: Valor de transferência inválido.", "error")
         return redirect(url_for('index'))
 
@@ -166,6 +169,30 @@ def transferir():
     finally:
         db.close()
 
+    return redirect(url_for('index'))
+
+# 🗑️ 5. ROTA: Remover/Apagar Conta do Sistema
+@app.route('/eliminar-conta/<numero>', methods=['POST'])
+def eliminar_conta(numero):
+    db = SessionLocal()
+    try:
+        # Procura a conta na base de dados
+        conta = db.query(ContaDB).filter(ContaDB.numero == numero).first()
+        if not conta:
+            flash("Erro: Conta não encontrada.", "error")
+            return redirect(url_for('index'))
+        
+        # Como no SQL usámos "ON DELETE CASCADE", ao apagar a conta,
+        # o Supabase apaga automaticamente todos os movimentos dela! (Cibersegurança & Integridade)
+        db.delete(conta)
+        db.commit()
+        flash(f"Conta #{numero} foi permanentemente removida do sistema.", "success")
+    except Exception as e:
+        db.rollback()
+        flash(f"Erro ao eliminar conta: {str(e)}", "error")
+    finally:
+        db.close()
+        
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
